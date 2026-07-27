@@ -37,8 +37,12 @@ export async function dailySalaryCalc(
      *
      * {
      *     amount: 100,
-     *     currency: "EUR"
+     *     currency: "EUR",
+     *     source: "Источник №1"
      * }
+     *
+     * После этого дальнейшему расчёту уже не важно,
+     * в каком исходном формате пришла операция.
      */
     const transactions = [
         ...parseSource1(source1),
@@ -71,6 +75,8 @@ export async function dailySalaryCalc(
     // сразу для всех необходимых валют.
     const rates = await getUsdRates(currencies);
 
+    // Один и тот же набор курсов используется и для итоговой
+    // суммы, и для статистических карточек интерфейса.
     const statistics = createCurrencyStatistics(
         transactions,
         rates
@@ -122,6 +128,11 @@ export async function dailySalaryCalc(
  * }>}
  */
 function createCurrencyStatistics(transactions, rates) {
+    /*
+     * Map удобно использовать для группировки:
+     * ключом будет код валюты ("USD", "EUR"),
+     * значением — накопленная статистика этой валюты.
+     */
     const statisticsByCurrency = new Map();
 
     for (const transaction of transactions) {
@@ -133,6 +144,10 @@ function createCurrencyStatistics(transactions, rates) {
             );
         }
 
+        /*
+         * Если валюта встречается впервые, создаём пустую группу.
+         * Если уже встречалась — берём ранее накопленные данные.
+         */
         const currentStatistics =
             statisticsByCurrency.get(transaction.currency) ?? {
                 currency: transaction.currency,
@@ -154,6 +169,11 @@ function createCurrencyStatistics(transactions, rates) {
          */
         currentStatistics.amountInUsd +=
             transaction.amount / rate;
+        /*
+         * Сохраняем и отдельную операцию. Этот список нужен UI,
+         * чтобы открыть детализацию в модальном окне без нового
+         * запроса к финансовому серверу.
+         */
         currentStatistics.operations.push({
             amount: transaction.amount,
             amountInUsd: roundMoney(
@@ -168,6 +188,10 @@ function createCurrencyStatistics(transactions, rates) {
         );
     }
 
+    /*
+     * Превращаем Map обратно в обычный массив:
+     * его удобно перебирать при создании карточек.
+     */
     return [...statisticsByCurrency.values()]
         .map(item => ({
             ...item,
@@ -183,6 +207,8 @@ function createCurrencyStatistics(transactions, rates) {
  * Проверяет общую структуру источников.
  */
 function validateSources(source1, source2) {
+    // Проверяем общую структуру до циклов, чтобы при повреждённом
+    // ответе API остановиться с точным сообщением об ошибке.
     if (source1 === undefined || source2 === undefined) {
         throw new Error(
             "Необходимо передать source1 и source2."
@@ -221,6 +247,8 @@ function parseSource1(source1) {
     const result = [];
 
     for (const transaction of source1.transactions) {
+        // Даже один повреждённый элемент означает, что ответ API
+        // нельзя считать надёжным для финансового расчёта.
         if (
             transaction === null ||
             typeof transaction !== "object" ||
@@ -272,6 +300,10 @@ function parseSource2(source2) {
             );
         }
 
+        /*
+         * Регулярное выражение /\s+/ допускает один или несколько
+         * пробелов: "300 USD" и "300   USD" обработаются одинаково.
+         */
         const parts = transaction.trim().split(/\s+/);
 
         if (parts.length !== 2) {

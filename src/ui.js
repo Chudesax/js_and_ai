@@ -1,5 +1,12 @@
 const APP_SELECTOR = "#app";
 
+/*
+ * Этот модуль отвечает только за отображение.
+ *
+ * Он не обращается к API и не пересчитывает общую выручку.
+ * Все готовые данные приходят сюда из main.js.
+ */
+
 /**
  * Отображает состояние загрузки.
  */
@@ -57,6 +64,13 @@ export function renderDashboard(
         0
     );
 
+    /*
+     * Основной каркас страницы создаётся одной вставкой:
+     * это уменьшает число отдельных операций с DOM.
+     *
+     * Вспомогательные функции ниже создают повторяющиеся части:
+     * карточки валют, панель курсов и модальное окно.
+     */
     appElement.innerHTML = `
         <main class="dot-pattern min-h-screen px-4 py-8 sm:px-6 lg:py-12">
             <div class="mx-auto max-w-6xl">
@@ -162,6 +176,10 @@ export function renderDashboard(
         ${createOperationsModal()}
     `;
 
+    /*
+     * HTML уже находится на странице — теперь можно найти кнопки
+     * валют и назначить им обработчики клика.
+     */
     setupOperationsModal(appElement, salary.statistics);
 }
 
@@ -217,6 +235,8 @@ export function renderError(error) {
 }
 
 function createCurrencyCards(statistics, rates) {
+    // Пустой массив — нормальная ситуация, а не ошибка:
+    // возможно, за день просто не было paid-операций.
     if (statistics.length === 0) {
         return `
             <p class="rounded-3xl border border-dashed border-pink-200
@@ -234,6 +254,12 @@ function createCurrencyCards(statistics, rates) {
         .join("");
 }
 
+/**
+ * Создаёт одну интерактивную карточку валюты.
+ *
+ * Карточка сделана элементом button, а не обычным div:
+ * так она доступна с клавиатуры и понятна скринридерам.
+ */
 function createCurrencyCard(statistics, rates) {
     const originalAmount = formatMoney(
         statistics.amount,
@@ -293,6 +319,13 @@ function createCurrencyCard(statistics, rates) {
     `;
 }
 
+/**
+ * Формирует нижнюю строку валютной карточки.
+ *
+ * Для USD по заданию показывается пересчёт в EUR.
+ * Для EUR и остальных валют функция возвращает null,
+ * после чего карточка показывает эквивалент в USD.
+ */
 function createConversionFooter(statistics, rates) {
     if (statistics.currency === "USD") {
         const euroRate = rates.EUR;
@@ -323,6 +356,10 @@ function createConversionFooter(statistics, rates) {
     return null;
 }
 
+/**
+ * Создаёт независимый боковой блок со всеми курсами,
+ * которые фактически использовались в текущем расчёте.
+ */
 function createRatesPanel(rates) {
     const rateRows = Object.entries(rates)
         .sort(([left], [right]) => left.localeCompare(right))
@@ -362,6 +399,10 @@ function createRatesPanel(rates) {
     `;
 }
 
+/**
+ * Создаёт пустую оболочку стандартного HTML-элемента dialog.
+ * Заголовок и список операций добавляются при выборе валюты.
+ */
 function createOperationsModal() {
     return `
         <dialog id="operations-modal"
@@ -394,6 +435,12 @@ function createOperationsModal() {
     `;
 }
 
+/**
+ * Связывает карточки валют с модальным окном.
+ *
+ * @param {HTMLElement} appElement
+ * @param {Array<object>} statistics
+ */
 function setupOperationsModal(appElement, statistics) {
     const modal = appElement.querySelector("#operations-modal");
     const modalTitle = appElement.querySelector("#modal-title");
@@ -402,6 +449,8 @@ function setupOperationsModal(appElement, statistics) {
 
     for (const card of appElement.querySelectorAll("[data-currency]")) {
         card.addEventListener("click", () => {
+            // Код выбранной валюты хранится в data-currency.
+            // По нему находим соответствующую группу операций.
             const selectedStatistics = statistics.find(
                 item => item.currency === card.dataset.currency
             );
@@ -414,11 +463,17 @@ function setupOperationsModal(appElement, statistics) {
                 `Успешные операции — ${selectedStatistics.currency}`;
             modalContent.innerHTML =
                 createOperationsList(selectedStatistics);
+
+            // showModal(), в отличие от show(), открывает настоящее
+            // модальное окно и блокирует взаимодействие с фоном.
             modal.showModal();
         });
     }
 
     closeButton.addEventListener("click", () => modal.close());
+
+    // Нажатие непосредственно на затемнённую область dialog
+    // также закрывает окно.
     modal.addEventListener("click", event => {
         if (event.target === modal) {
             modal.close();
@@ -426,6 +481,10 @@ function setupOperationsModal(appElement, statistics) {
     });
 }
 
+/**
+ * Создаёт список успешных операций выбранной валюты.
+ * В статистику ранее попали только операции со статусом paid.
+ */
 function createOperationsList(statistics) {
     const operationRows = statistics.operations
         .map((operation, index) => `
@@ -474,6 +533,9 @@ function createOperationsList(statistics) {
     `;
 }
 
+/**
+ * Форматирует Date по российским правилам отображения.
+ */
 function formatDate(date) {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
         throw new TypeError("Некорректная дата расчёта.");
@@ -488,6 +550,10 @@ function formatDate(date) {
     }).format(date);
 }
 
+/**
+ * Использует встроенный Intl вместо ручного добавления
+ * символов $, € и разделителей разрядов.
+ */
 function formatMoney(total, currency) {
     if (!Number.isFinite(total)) {
         throw new TypeError(
@@ -502,6 +568,10 @@ function formatMoney(total, currency) {
     }).format(total);
 }
 
+/**
+ * Курс выводится максимум с шестью знаками после запятой:
+ * этого достаточно для интерфейса, исходное число не изменяется.
+ */
 function formatRate(rate) {
     if (!Number.isFinite(rate) || rate <= 0) {
         throw new TypeError(
@@ -514,6 +584,9 @@ function formatRate(rate) {
     }).format(rate);
 }
 
+/**
+ * Выбирает правильную форму русского слова "операция".
+ */
 function formatOperationCount(count) {
     const lastTwoDigits = count % 100;
     const lastDigit = count % 10;
@@ -533,6 +606,10 @@ function formatOperationCount(count) {
     return `${count} операций`;
 }
 
+/**
+ * Возвращает корневой контейнер приложения.
+ * Его отсутствие — ошибка разметки index.html.
+ */
 function getAppElement() {
     const appElement = document.querySelector(APP_SELECTOR);
 

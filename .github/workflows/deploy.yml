@@ -1,5 +1,7 @@
 name: Deploy Vite site to GitHub Pages
 
+# Запускаем публикацию после каждого push в main.
+# workflow_dispatch добавляет кнопку ручного запуска в Actions.
 on:
     push:
         branches:
@@ -7,10 +9,14 @@ on:
     workflow_dispatch:
 
 permissions:
+    # Workflow может читать код и публиковать GitHub Pages,
+    # но не получает лишних прав на изменение репозитория.
     contents: read
     pages: write
     id-token: write
 
+# Не запускаем две публикации одновременно.
+# Если пришёл новый push, устаревшая сборка отменяется.
 concurrency:
     group: pages
     cancel-in-progress: true
@@ -23,29 +29,36 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            # Загружаем содержимое репозитория в виртуальную машину.
             - name: Checkout repository
               uses: actions/checkout@v6
 
+            # Устанавливаем актуальную LTS-версию Node.js.
             - name: Set up Node.js
               uses: actions/setup-node@v6
               with:
                   node-version: lts/*
                   cache: npm
 
+            # npm ci устанавливает точные версии из package-lock.json.
             - name: Install dependencies
               run: npm ci
 
+            # Vite собирает production-файлы в папку dist.
             - name: Build application
               run: npm run build
 
+            # Подготавливаем окружение GitHub Pages.
             - name: Configure GitHub Pages
               uses: actions/configure-pages@v5
 
+            # Передаём только готовую папку dist, не исходный код.
             - name: Upload production build
               uses: actions/upload-pages-artifact@v4
               with:
                   path: dist
 
+            # Публикуем загруженный artifact на GitHub Pages.
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v4
