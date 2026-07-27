@@ -4,8 +4,17 @@ import {
 } from "./api.js";
 
 import { dailySalaryCalc } from "./salary.js";
+import {
+    renderDashboard,
+    renderError,
+    renderLoading,
+} from "./ui.js";
+
+import "./style.css";
 
 async function main() {
+    renderLoading();
+
     try {
         // Оба источника загружаются одновременно.
         const [
@@ -26,22 +35,17 @@ async function main() {
             finance2Response?.data ??
             finance2Response;
 
-        console.log("Источник №1:", source1);
-        console.log("Источник №2:", source2);
-
         // dailySalaryCalc теперь асинхронная,
         // поэтому обязательно используем await.
-        const result = await dailySalaryCalc(
+        const salaryResult = await dailySalaryCalc(
             source1,
             source2
         );
 
-        console.log(
-            "Общая выручка в USD:",
-            result
+        renderDashboard(
+            salaryResult,
+            new Date()
         );
-
-        renderResult(result);
     } catch (error) {
         console.error(
             `${error.name}: ${error.message}`
@@ -49,47 +53,6 @@ async function main() {
 
         renderError(error);
     }
-}
-
-/**
- * Показывает итог на странице.
- */
-function renderResult(result) {
-    const appElement =
-        document.querySelector("#app");
-
-    if (!appElement) {
-        return;
-    }
-
-    appElement.innerHTML = `
-        <h1>Дневная выручка</h1>
-
-        <p>
-            Общая сумма:
-            <strong>
-                ${result.total.toFixed(2)}
-                ${result.currency}
-            </strong>
-        </p>
-    `;
-}
-
-/**
- * Показывает ошибку на странице.
- */
-function renderError(error) {
-    const appElement =
-        document.querySelector("#app");
-
-    if (!appElement) {
-        return;
-    }
-
-    appElement.innerHTML = `
-        <h1>Ошибка</h1>
-        <p>${error.message}</p>
-    `;
 }
 
 main();

@@ -9,7 +9,20 @@ import { getUsdRates } from "./currencyApi.js";
  *
  * @returns {Promise<{
  *     total: number,
- *     currency: "USD"
+ *     currency: "USD",
+ *     statistics: Array<{
+ *         currency: string,
+ *         amount: number,
+ *         operationsCount: number,
+ *         amountInUsd: number,
+ *         usdRate: number,
+ *         operations: Array<{
+ *             amount: number,
+ *             amountInUsd: number,
+ *             source: string
+ *         }>
+ *     }>,
+ *     rates: Record<string, number>
  * }>}
  */
 export async function dailySalaryCalc(
@@ -36,20 +49,80 @@ export async function dailySalaryCalc(
         return {
             total: 0,
             currency: "USD",
+            statistics: [],
+            rates: {
+                USD: 1,
+            },
         };
     }
 
     // Получаем список всех валют,
     // встречающихся в транзакциях.
-    const currencies = transactions.map(
-        transaction => transaction.currency
-    );
+    const currencies = [
+        ...transactions.map(
+            transaction => transaction.currency
+        ),
+        // EUR нужен для пересчёта долларовой карточки.
+        // Он добавляется в тот же единственный запрос курсов.
+        "EUR",
+    ];
 
     // Выполняется только один запрос к CurrencyFreaks
     // сразу для всех необходимых валют.
     const rates = await getUsdRates(currencies);
 
-    let totalInUsd = 0;
+    const statistics = createCurrencyStatistics(
+        transactions,
+        rates
+    );
+
+    /*
+     * Итог считаем по неокруглённым значениям операций.
+     * Округление статистических карточек не должно менять
+     * точность общей суммы даже на один цент.
+     */
+    const totalInUsd = transactions.reduce(
+        (total, transaction) =>
+            total +
+            transaction.amount /
+                rates[transaction.currency],
+        0
+    );
+
+    return {
+        // Округляем итоговую денежную сумму
+        // до двух знаков после запятой.
+        total: roundMoney(totalInUsd),
+        currency: "USD",
+        statistics,
+        rates,
+    };
+}
+
+/**
+ * Группирует поступления по исходной валюте.
+ *
+ * Помимо исходной суммы сохраняются количество операций,
+ * эквивалент в USD и курс, который участвовал в расчёте.
+ * Благодаря этому интерфейс не делает повторный запрос курсов.
+ *
+ * @param {Array<{ amount: number, currency: string }>} transactions
+ * @param {Record<string, number>} rates
+ * @returns {Array<{
+ *     currency: string,
+ *     amount: number,
+ *     operationsCount: number,
+ *     amountInUsd: number,
+ *     usdRate: number,
+ *     operations: Array<{
+ *         amount: number,
+ *         amountInUsd: number,
+ *         source: string
+ *     }>
+ * }>}
+ */
+function createCurrencyStatistics(transactions, rates) {
+    const statisticsByCurrency = new Map();
 
     for (const transaction of transactions) {
         const rate = rates[transaction.currency];
@@ -60,29 +133,50 @@ export async function dailySalaryCalc(
             );
         }
 
-        /*
-         * CurrencyFreaks возвращает курсы относительно USD.
-         *
-         * Например:
-         *
-         * 1 USD = 0.92 EUR
-         *
-         * Чтобы перевести 100 EUR в USD:
-         *
-         * 100 / 0.92 = 108.695... USD
-         */
-        const amountInUsd =
-            transaction.amount / rate;
+        const currentStatistics =
+            statisticsByCurrency.get(transaction.currency) ?? {
+                currency: transaction.currency,
+                amount: 0,
+                operationsCount: 0,
+                amountInUsd: 0,
+                usdRate: rate,
+                operations: [],
+            };
 
-        totalInUsd += amountInUsd;
+        currentStatistics.amount += transaction.amount;
+        currentStatistics.operationsCount += 1;
+
+        /*
+         * CurrencyFreaks возвращает курс вида:
+         * 1 USD = rate единиц исходной валюты.
+         * Поэтому для перевода исходной суммы в USD делим её
+         * на полученный курс.
+         */
+        currentStatistics.amountInUsd +=
+            transaction.amount / rate;
+        currentStatistics.operations.push({
+            amount: transaction.amount,
+            amountInUsd: roundMoney(
+                transaction.amount / rate
+            ),
+            source: transaction.source,
+        });
+
+        statisticsByCurrency.set(
+            transaction.currency,
+            currentStatistics
+        );
     }
 
-    return {
-        // Округляем итоговую денежную сумму
-        // до двух знаков после запятой.
-        total: roundMoney(totalInUsd),
-        currency: "USD",
-    };
+    return [...statisticsByCurrency.values()]
+        .map(item => ({
+            ...item,
+            amount: roundMoney(item.amount),
+            amountInUsd: roundMoney(item.amountInUsd),
+        }))
+        .sort((left, right) =>
+            left.currency.localeCompare(right.currency)
+        );
 }
 
 /**
@@ -155,6 +249,7 @@ function parseSource1(source1) {
         result.push({
             amount: transaction.amount,
             currency,
+            source: "Источник №1",
         });
     }
 
@@ -208,6 +303,7 @@ function parseSource2(source2) {
         result.push({
             amount,
             currency,
+            source: "Источник №2",
         });
     }
 
