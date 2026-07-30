@@ -44,9 +44,16 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            # Vite собирает production-файлы в папку dist.
+            # Специальный mode добавляет к ссылкам префикс
+            # /js_and_ai/, необходимый только для GitHub Pages.
             - name: Build application
-              run: npm run build
+              run: npm run build -- --mode github-pages
+
+            # GitHub Pages не умеет самостоятельно перенаправлять
+            # SPA-маршруты на index.html. Копия позволяет напрямую
+            # открывать /sales и /settings без пустой страницы.
+            - name: Add SPA route fallback
+              run: cp dist/index.html dist/404.html
 
             # Подготавливаем окружение GitHub Pages.
             - name: Configure GitHub Pages
