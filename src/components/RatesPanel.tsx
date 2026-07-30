@@ -1,7 +1,12 @@
 import { formatRate } from "../lib/formatters";
 
+import type {
+    RateSnapshot,
+} from "../types/finance";
+
 interface RatesPanelProps {
     rates: Record<string, number>;
+    history: RateSnapshot[];
 }
 
 /**
@@ -9,10 +14,17 @@ interface RatesPanelProps {
  */
 export function RatesPanel({
     rates,
+    history,
 }: RatesPanelProps) {
-    const rateEntries = Object.entries(rates).sort(
-        ([left], [right]) => left.localeCompare(right)
-    );
+    /*
+     * Курс USD к самому себе всегда равен единице и не несёт
+     * полезной информации, поэтому в список его не добавляем.
+     */
+    const rateEntries = Object.entries(rates)
+        .filter(([currency]) => currency !== "USD")
+        .sort(
+            ([left], [right]) => left.localeCompare(right)
+        );
 
     return (
         <aside
@@ -58,6 +70,59 @@ export function RatesPanel({
                     </li>
                 ))}
             </ul>
+
+            <div className="mt-5 border-t border-pink-100 pt-5">
+                <h3 className="text-sm font-black text-pink-950">
+                    Последние расчёты
+                </h3>
+
+                {history.length === 0 ? (
+                    <p className="mt-3 text-sm leading-6
+                        text-slate-500">
+                        История появится после первого успешного
+                        расчёта.
+                    </p>
+                ) : (
+                    <ol className="mt-2">
+                        {history.map(item => (
+                            <li
+                                key={item.calculatedAt}
+                                className="border-b border-pink-100
+                                    py-3 last:border-0"
+                            >
+                                <time
+                                    dateTime={item.calculatedAt}
+                                    className="block text-xs font-semibold
+                                        text-slate-400"
+                                >
+                                    {formatSnapshotDate(
+                                        item.calculatedAt
+                                    )}
+                                </time>
+                                <strong className="mt-1 block text-sm
+                                    text-pink-900">
+                                    1 {item.baseCurrency} ={" "}
+                                    {formatRate(item.rate)}{" "}
+                                    {item.targetCurrency}
+                                </strong>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </div>
         </aside>
     );
+}
+
+/**
+ * Отображает дату и время в компактном числовом формате.
+ */
+function formatSnapshotDate(isoDate: string): string {
+    return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(isoDate));
 }

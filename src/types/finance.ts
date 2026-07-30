@@ -36,3 +36,17 @@ export interface DashboardData {
     report: DashboardReport;
     calculatedAt: Date;
 }
+
+/**
+ * Снимок курса, использованного в завершённом расчёте.
+ *
+ * История пока хранится локально в браузере. После появления
+ * backend этот интерфейс можно сохранить, заменив только
+ * источник данных.
+ */
+export interface RateSnapshot {
+    calculatedAt: string;
+    baseCurrency: "USD";
+    targetCurrency: "EUR";
+    rate: number;
+}

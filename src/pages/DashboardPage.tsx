@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getDashboardData } from "../api/dashboard";
@@ -11,9 +14,14 @@ import {
     formatDate,
     formatMoney,
 } from "../lib/formatters";
+import {
+    getRateHistory,
+    saveRateSnapshot,
+} from "../lib/rateHistory";
 
 import type {
     CurrencyStatistics,
+    RateSnapshot,
 } from "../types/finance";
 
 /**
@@ -22,11 +30,35 @@ import type {
 export default function DashboardPage() {
     const [selectedStatistics, setSelectedStatistics] =
         useState<CurrencyStatistics | null>(null);
+    const [rateHistory, setRateHistory] =
+        useState<RateSnapshot[]>(getRateHistory);
 
     const dashboardQuery = useQuery({
         queryKey: ["dashboard-report"],
         queryFn: getDashboardData,
     });
+
+    /*
+     * Историю обновляем только после успешного расчёта.
+     * Ошибочный или незавершённый запрос не создаёт запись.
+     */
+    useEffect(() => {
+        if (!dashboardQuery.data) {
+            return;
+        }
+
+        const {
+            report,
+            calculatedAt,
+        } = dashboardQuery.data;
+
+        setRateHistory(
+            saveRateSnapshot(
+                calculatedAt,
+                report.rates.EUR
+            )
+        );
+    }, [dashboardQuery.data]);
 
     if (dashboardQuery.isPending) {
         return <LoadingScreen />;
@@ -192,7 +224,10 @@ export default function DashboardPage() {
                             )}
                         </section>
 
-                        <RatesPanel rates={report.rates} />
+                        <RatesPanel
+                            rates={report.rates}
+                            history={rateHistory}
+                        />
                     </div>
 
                     <footer className="py-6 text-center text-xs
