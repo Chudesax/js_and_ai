@@ -1,4 +1,4 @@
-import { getUsdRates } from "./currencyApi.js";
+import { getUsdRates } from "@/currencyApi.js";
 
 /**
  * Рассчитывает общую дневную выручку

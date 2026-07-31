@@ -2,8 +2,8 @@ import {
     createBrowserRouter,
 } from "react-router";
 
-import { AppLayout } from "./layouts/AppLayout";
-import RouteErrorPage from "./pages/RouteErrorPage";
+import { AppLayout } from "@/layouts/AppLayout";
+import RouteErrorPage from "@/pages/RouteErrorPage";
 
 /**
  * Централизованная карта страниц приложения.
@@ -23,7 +23,7 @@ export const router = createBrowserRouter(
                     index: true,
                     lazy: async () => ({
                         Component: (
-                            await import("./pages/DashboardPage")
+                            await import("@/pages/DashboardPage")
                         ).default,
                     }),
                 },
@@ -31,7 +31,7 @@ export const router = createBrowserRouter(
                     path: "sales",
                     lazy: async () => ({
                         Component: (
-                            await import("./pages/SalesPage")
+                            await import("@/pages/SalesPage")
                         ).default,
                     }),
                 },
@@ -39,7 +39,7 @@ export const router = createBrowserRouter(
                     path: "settings",
                     lazy: async () => ({
                         Component: (
-                            await import("./pages/SettingsPage")
+                            await import("@/pages/SettingsPage")
                         ).default,
                     }),
                 },
@@ -47,7 +47,7 @@ export const router = createBrowserRouter(
                     path: "*",
                     lazy: async () => ({
                         Component: (
-                            await import("./pages/NotFoundPage")
+                            await import("@/pages/NotFoundPage")
                         ).default,
                     }),
                 },

@@ -1,13 +1,13 @@
 import {
     getFinanceSource1,
     getFinanceSource2,
-} from "../api.js";
-import { dailySalaryCalc } from "../salary.js";
+} from "@/api.js";
+import { dailySalaryCalc } from "@/salary.js";
 
 import type {
     DashboardData,
     DashboardReport,
-} from "../types/finance";
+} from "@/types/finance";
 
 /**
  * Загружает оба источника и формирует готовые данные дашборда.

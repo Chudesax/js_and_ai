@@ -1,6 +1,6 @@
 import type {
     RateSnapshot,
-} from "../types/finance";
+} from "@/types/finance";
 
 const STORAGE_KEY = "pink-finance-rate-history";
 const MAX_HISTORY_ITEMS = 5;

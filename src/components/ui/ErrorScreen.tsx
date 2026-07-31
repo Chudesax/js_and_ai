@@ -1,4 +1,4 @@
-import { getErrorMessage } from "../../lib/formatters";
+import { getErrorMessage } from "@/lib/formatters";
 
 interface ErrorScreenProps {
     error: unknown;

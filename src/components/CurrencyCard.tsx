@@ -1,11 +1,11 @@
 import {
     formatMoney,
     formatOperationCount,
-} from "../lib/formatters";
+} from "@/lib/formatters";
 
 import type {
     CurrencyStatistics,
-} from "../types/finance";
+} from "@/types/finance";
 
 interface CurrencyCardProps {
     statistics: CurrencyStatistics;

@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig(({ mode }) => {
     /*
@@ -18,6 +19,21 @@ export default defineConfig(({ mode }) => {
 
     return {
         base,
+        resolve: {
+            alias: {
+                /*
+                 * @ всегда указывает на папку src.
+                 * Благодаря этому импорт не зависит от глубины файла:
+                 *
+                 * @/components/Card
+                 *
+                 * вместо хрупкого пути ../../components/Card.
+                 */
+                "@": fileURLToPath(
+                    new URL("./src", import.meta.url)
+                ),
+            },
+        },
         plugins: [
             react(),
             tailwindcss(),

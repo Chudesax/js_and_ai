@@ -4,25 +4,25 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { getDashboardData } from "../api/dashboard";
-import { CurrencyCard } from "../components/CurrencyCard";
-import { OperationsModal } from "../components/OperationsModal";
-import { RatesPanel } from "../components/RatesPanel";
-import { ErrorScreen } from "../components/ui/ErrorScreen";
-import { LoadingScreen } from "../components/ui/LoadingScreen";
+import { getDashboardData } from "@/api/dashboard";
+import { CurrencyCard } from "@/components/CurrencyCard";
+import { OperationsModal } from "@/components/OperationsModal";
+import { RatesPanel } from "@/components/RatesPanel";
+import { ErrorScreen } from "@/components/ui/ErrorScreen";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import {
     formatDate,
     formatMoney,
-} from "../lib/formatters";
+} from "@/lib/formatters";
 import {
     getRateHistory,
     saveRateSnapshot,
-} from "../lib/rateHistory";
+} from "@/lib/rateHistory";
 
 import type {
     CurrencyStatistics,
     RateSnapshot,
-} from "../types/finance";
+} from "@/types/finance";
 
 /**
  * Главная страница финансового отчёта.
@@ -65,12 +65,22 @@ export default function DashboardPage() {
     }
 
     if (dashboardQuery.isError) {
+        /*
+         * refetch() возвращает Promise с результатом запроса.
+         * Кнопке повтора этот результат возвращать не нужно:
+         * TanStack Query сам обновит isPending, isError и data.
+         *
+         * Оператор void явно показывает TypeScript и читателю,
+         * что Promise запускается намеренно без await.
+         */
+        const handleRetry = (): void => {
+            void dashboardQuery.refetch();
+        };
+
         return (
             <ErrorScreen
                 error={dashboardQuery.error}
-                onRetry={() => {
-                    void dashboardQuery.refetch();
-                }}
+                onRetry={handleRetry}
             />
         );
     }

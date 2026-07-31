@@ -1,8 +1,8 @@
-import { formatRate } from "../lib/formatters";
+import { formatRate } from "@/lib/formatters";
 
 import type {
     RateSnapshot,
-} from "../types/finance";
+} from "@/types/finance";
 
 interface RatesPanelProps {
     rates: Record<string, number>;

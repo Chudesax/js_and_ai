@@ -1,9 +1,9 @@
-import { request } from "./api.js";
+import { request } from "@/api.js";
 
 import {
     CURRENCY_API_BASE_URL,
     CURRENCY_API_KEY,
-} from "./config.js";
+} from "@/config.js";
 
 /**
  * Получает актуальные курсы валют относительно USD.

@@ -1,7 +1,7 @@
 import { RouterProvider } from "react-router";
 
-import { AppProviders } from "./providers/AppProviders";
-import { router } from "./router";
+import { AppProviders } from "@/providers/AppProviders";
+import { router } from "@/router";
 
 /**
  * Корневой компонент объединяет инфраструктурные провайдеры

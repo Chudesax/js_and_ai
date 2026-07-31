@@ -40,6 +40,20 @@ main.tsx
 - `src/style.css` — Tailwind и небольшие декоративные стили.
 - `vite.config.js` — настройка React, Vite и Tailwind.
 
+## Алиас импортов
+
+Алиас `@` всегда указывает на папку `src`:
+
+```ts
+import { CurrencyCard } from "@/components/CurrencyCard";
+import type { DashboardReport } from "@/types/finance";
+```
+
+Это предпочтительнее цепочек `../../`, которые приходится менять
+после перемещения файла. Алиас одновременно настроен в
+`vite.config.js` для сборщика и в `tsconfig.json` для TypeScript
+и редактора кода.
+
 ## Последовательность запуска
 
 1. Браузер загружает `src/main.tsx`.

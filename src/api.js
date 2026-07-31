@@ -1,7 +1,7 @@
 import {
     FINANCE_API_BASE_URL,
     FINANCE_API_KEY,
-} from "./config.js";
+} from "@/config.js";
 
 /**
  * Универсальная функция HTTP-запросов.

@@ -1,6 +1,6 @@
 import { useRouteError } from "react-router";
 
-import { ErrorScreen } from "../components/ui/ErrorScreen";
+import { ErrorScreen } from "@/components/ui/ErrorScreen";
 
 /**
  * Страховочная граница ошибок React Router.

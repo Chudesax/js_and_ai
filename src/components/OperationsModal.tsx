@@ -3,11 +3,11 @@ import {
     useRef,
 } from "react";
 
-import { formatMoney } from "../lib/formatters";
+import { formatMoney } from "@/lib/formatters";
 
 import type {
     CurrencyStatistics,
-} from "../types/finance";
+} from "@/types/finance";
 
 interface OperationsModalProps {
     statistics: CurrencyStatistics | null;
