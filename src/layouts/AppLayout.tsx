@@ -11,6 +11,7 @@ import {
 const navigationItems = [
     { to: "/", label: "Дашборд", end: true },
     { to: "/sales", label: "Продажи" },
+    { to: "/sources", label: "Источник" },
     { to: "/settings", label: "Настройки" },
 ];
 
@@ -55,8 +56,8 @@ export function AppLayout() {
                     backdrop-blur"
                 aria-label="Основная навигация"
             >
-                <div className="mx-auto flex max-w-6xl items-center
-                    justify-between gap-5 py-3">
+                <div className="mx-auto flex max-w-6xl flex-col gap-2 py-3
+                    sm:flex-row sm:items-center sm:justify-between sm:gap-5">
                     <button
                         type="button"
                         className="cursor-default rounded-md font-bold
@@ -67,7 +68,7 @@ export function AppLayout() {
                     >
                         Pink Finance
                     </button>
-                    <ul className="flex items-center gap-1">
+                    <ul className="flex max-w-full items-center gap-1 overflow-x-auto">
                         {navigationItems.map(item => (
                             <li key={item.to}>
                                 <NavLink
