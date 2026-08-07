@@ -22,6 +22,9 @@ export interface SourceCheck {
     status: number | null;
     durationMs: number;
     itemCount: number;
+    acceptedCount: number;
+    excludedCount: number;
+    exclusionReason: string | null;
     isAvailable: boolean;
     summary: string;
 }
@@ -87,6 +90,9 @@ function failedSource(
             status: null,
             durationMs: 0,
             itemCount: 0,
+            acceptedCount: 0,
+            excludedCount: 0,
+            exclusionReason: null,
             isAvailable: false,
             summary: `Данные недоступны: ${message}.`,
         },
@@ -145,6 +151,41 @@ function checkSource1(captured: CapturedResponse): {
     }
 
     const itemCount = Array.isArray(transactions) ? transactions.length : 0;
+    const acceptedCount = Array.isArray(transactions)
+        ? transactions.filter(item =>
+            isRecord(item) &&
+            item.type === "paid" &&
+            typeof item.amount === "number" &&
+            Number.isFinite(item.amount) &&
+            typeof item.currency === "string" &&
+            item.currency.trim() !== ""
+        ).length
+        : 0;
+    const statusCounts = Array.isArray(transactions)
+        ? transactions.reduce<Record<string, number>>((counts, item) => {
+            if (!isRecord(item) || typeof item.type !== "string") return counts;
+            counts[item.type] = (counts[item.type] ?? 0) + 1;
+            return counts;
+        }, {})
+        : {};
+    const excludedStatuses = Object.entries(statusCounts)
+        .filter(([status]) => status !== "paid")
+        .map(([status, count]) => `${count} ${status}`);
+    const excludedByStatusCount = Object.entries(statusCounts)
+        .filter(([status]) => status !== "paid")
+        .reduce((total, [, count]) => total + count, 0);
+    const excludedByInvalidData = Math.max(
+        0,
+        itemCount - acceptedCount - excludedByStatusCount,
+    );
+    const exclusionReasons = [
+        excludedStatuses.length > 0
+            ? `По статусу не учтены: ${excludedStatuses.join(", ")}.`
+            : null,
+        excludedByInvalidData > 0
+            ? `Из-за некорректных данных не учтено: ${excludedByInvalidData}.`
+            : null,
+    ].filter(reason => reason !== null);
 
     return {
         source: {
@@ -153,6 +194,9 @@ function checkSource1(captured: CapturedResponse): {
             status: captured.status,
             durationMs: captured.durationMs,
             itemCount,
+            acceptedCount,
+            excludedCount: itemCount - acceptedCount,
+            exclusionReason: exclusionReasons.join(" ") || null,
             isAvailable: true,
             summary: issues.length === 0
                 ? "Структура и данные корректны."
@@ -206,7 +250,7 @@ function checkSource2(captured: CapturedResponse): {
                 title: "Валюты записаны в нижнем регистре",
                 severity: "medium",
                 source: "Источник №2",
-                description: `${lowercaseCurrencies.length} из ${root.length} операций содержат строчные коды валют.`,
+                description: `${lowercaseCurrencies.length} из ${root.length} записей второго источника содержат строчные коды валют.`,
                 examples: lowercaseCurrencies.slice(0, 2),
                 expected: "Валютные коды в верхнем регистре: USD, EUR.",
                 impact: "Текущий клиент исправляет регистр, но строгий потребитель может отклонить данные.",
@@ -216,6 +260,15 @@ function checkSource2(captured: CapturedResponse): {
     }
 
     const itemCount = Array.isArray(root) ? root.length : 0;
+    const acceptedCount = Array.isArray(root)
+        ? root.filter(item => {
+            if (typeof item !== "string") return false;
+            const parts = item.trim().split(/\s+/);
+            if (parts.length !== 2) return false;
+            const [amount, currency] = parts;
+            return Number.isFinite(Number(amount)) && currency.trim() !== "";
+        }).length
+        : 0;
 
     return {
         source: {
@@ -224,6 +277,11 @@ function checkSource2(captured: CapturedResponse): {
             status: captured.status,
             durationMs: captured.durationMs,
             itemCount,
+            acceptedCount,
+            excludedCount: itemCount - acceptedCount,
+            exclusionReason: itemCount > acceptedCount
+                ? "Не учтены строки с некорректным форматом."
+                : null,
             isAvailable: true,
             summary: issues.length === 0
                 ? "Структура и данные корректны."

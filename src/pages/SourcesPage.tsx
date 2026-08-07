@@ -16,7 +16,7 @@ const sourceDescriptions = [
     {
         name: "Источник №2",
         endpoint: "/api/finance2",
-        format: "Строки в формате «300 USD»",
+        format: "Массив строк в формате «300 USD»",
     },
 ];
 
@@ -40,6 +40,15 @@ export default function SourcesPage() {
             setIsChecking(false);
         }
     }
+
+    const totalReceived = report?.sources.reduce(
+        (total, source) => total + source.itemCount,
+        0,
+    ) ?? 0;
+    const totalAccepted = report?.sources.reduce(
+        (total, source) => total + source.acceptedCount,
+        0,
+    ) ?? 0;
 
     return (
         <>
@@ -110,11 +119,16 @@ export default function SourcesPage() {
                                 {result ? (
                                     <div className="mt-5 border-t border-pink-50 pt-4">
                                         <p className="font-bold text-slate-700">
-                                            {result.itemCount} операций · {result.status ?? "—"}
+                                            Получено {result.itemCount} · принято {result.acceptedCount}
                                         </p>
                                         <p className="mt-1 text-sm text-slate-500">
                                             {result.summary}
                                         </p>
+                                        {result.exclusionReason ? (
+                                            <p className="mt-2 text-sm font-bold text-amber-700">
+                                                {result.exclusionReason}
+                                            </p>
+                                        ) : null}
                                     </div>
                                 ) : null}
                             </article>
@@ -140,6 +154,20 @@ export default function SourcesPage() {
                                         : "Всё корректно"
                                     : "Расчёт невозможен"}
                             </h2>
+
+                            <div className="mt-5 rounded-2xl bg-white/10 p-5">
+                                <p className="font-black text-white">
+                                    Получено {totalReceived} записей. В расчёт
+                                    принято {totalAccepted}.
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-pink-50/80">
+                                    Не принято {totalReceived - totalAccepted}:{" "}
+                                    {report.sources
+                                        .filter(source => source.exclusionReason)
+                                        .map(source => source.exclusionReason)
+                                        .join(" ") || "исключённых записей нет."}
+                                </p>
+                            </div>
 
                             {report.issues.length > 0 ? (
                                 <div className="mt-7 space-y-7">
