@@ -1,0 +1,4 @@
+interface:
+  display_name: "Проверка финансовых API"
+  short_description: "Находит дефекты в текущих финансовых ответах"
+  default_prompt: "Используй $project-income-validator, чтобы проверить текущие ответы двух финансовых API и подготовить отчёт для backend-команды."
